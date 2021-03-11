@@ -7,7 +7,6 @@
 int main (void) {
 	int fd[2], fd1[2], nbytes, input, sum;
 	pid_t childpid;
-	char string[] = "We love 3 SH3 !\n";
 	int readbuffer;
 	
 	sum = 0;
