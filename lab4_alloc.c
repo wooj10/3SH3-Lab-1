@@ -17,7 +17,7 @@ Code, Compile, Run and Debug online from anywhere in world.
 int main(void)
 {
     // creating a file descriptor
-    char *file_descriptor = open("./res.txt", O_RDWR, S_IRUSR | S_IWUSR);
+    char file_descriptor = open("./res.txt", O_RDWR, S_IRUSR | S_IWUSR);
     struct stat sb;
 
     // getting the size of the file 
@@ -45,11 +45,15 @@ int main(void)
     
     int unit_type = 0;
     int units_needed = 0;
-    while(1 == 1)
+    while(1)
     {
         // asking for unit type and number of units 
-        printf("\nPlease enter unit type. ");
+        printf("\nPlease enter unit type, or -1 to exit. ");
         scanf("%d", &unit_type);
+        
+        if (unit_type == -1){
+        	break;
+        }
         
         printf("\nHow many units are needed? ");
         scanf("%d", &units_needed);
@@ -57,7 +61,6 @@ int main(void)
         // if the unit type is zero, subtract from 0 type units in file
         if(unit_type == 0)
         {
-            printf("hello");
             if(((int)(res_file[2] - 48) - units_needed) < 0)
             {
                 printf("Not enough units.\n");
@@ -97,8 +100,12 @@ int main(void)
             }            
         }
         
+        msync(res_file, sb.st_size, MS_SYNC);
+        
         // resetting the variables for the next iteration
         unit_type = 0;
         units_needed = 0;
     }
+    
+    return 0;
 }
