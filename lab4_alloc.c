@@ -40,7 +40,6 @@ int main(void)
     for(int i = 0; i < sb.st_size; i++)
     {
         printf("%c", res_file[i]);
-        
     }
     
     int unit_type = 0;
@@ -48,12 +47,8 @@ int main(void)
     while(1)
     {
         // asking for unit type and number of units 
-        printf("\nPlease enter unit type, or -1 to exit. ");
+        printf("\nPlease enter unit type. ");
         scanf("%d", &unit_type);
-        
-        if (unit_type == -1){
-        	break;
-        }
         
         printf("\nHow many units are needed? ");
         scanf("%d", &units_needed);
@@ -73,7 +68,7 @@ int main(void)
         }
         
         // if the unit type is one, subtract from 1 type units in file    
-        if(unit_type == 1)
+        else if(unit_type == 1)
         {
             if(((int)(res_file[6] - 48) - units_needed) < 0)
             {
@@ -87,7 +82,7 @@ int main(void)
         }
         
         // if the unit type is two, subtract from 2 type units in file
-        if(unit_type == 2)
+        else if(unit_type == 2)
         {
             if(((int)(res_file[10] - 48) - units_needed) < 0)
             {
@@ -98,6 +93,10 @@ int main(void)
                 res_file[10] = (char)((int)(res_file[10] - 48) - units_needed + 48);
                 printf("You have %c units of type %d left.\n", res_file[10], unit_type);
             }            
+        }
+        
+        else {
+        	printf("No unit of that type.\n");
         }
         
         msync(res_file, sb.st_size, MS_SYNC);

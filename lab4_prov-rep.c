@@ -20,10 +20,6 @@ Code, Compile, Run and Debug online from anywhere in world.
 
 #define SEMPERM 0600 /* permission for semaphore */
 
-int sem_id;
-
-
-
 union {
 	int val;
 
@@ -32,7 +28,31 @@ union {
 	ushort *array;
 }semnum;
 
+void wait(int semid){
 
+	struct sembuf wait_buf;
+
+	wait_buf.sem_num = 0;
+	wait_buf.sem_op = -1;
+	wait_buf.sem_flg = 0;
+
+	if (semop(semid,&wait_buf,1) < 0){
+		printf("fatal wait error on semaphore %i",semid);
+	}
+}
+
+void signal(int semid){
+
+	struct sembuf sig_buf;
+
+	sig_buf.sem_num = 0;
+	sig_buf.sem_op = 1;
+	sig_buf.sem_flg = 0;
+
+	if (semop(semid,&sig_buf,1) < 0){
+		printf("fatal signal error on semaphore %i",semid);
+	}
+}
 
 int main(void)
 {
@@ -66,11 +86,12 @@ int main(void)
     char need_process;
     int unit_type = 0;
     int units_needed = 0;
+    int sem_id_mutex;
     pid_t childpid;
     
-    sem_id = semget(IPC_PRIVATE,1,SEMPERM|IPC_CREAT|IPC_EXCL);
-    semnum.val = 0;
-	semctl(sem_id,0,SETVAL, semnum);
+    sem_id_mutex = semget(IPC_PRIVATE,1,SEMPERM|IPC_CREAT|IPC_EXCL);
+    semnum.val = 1;
+	semctl(sem_id_mutex,0,SETVAL, semnum);
     
     if (( childpid = fork() ) == -1) {
 		perror("fork");
@@ -82,13 +103,25 @@ int main(void)
 		while (1){
 			pagesize = getpagesize();
 			char vec[(sb.st_size + pagesize)/pagesize];
-			printf("Page size: %d\n", pagesize);
-			printf("mincore: %d\n", mincore(res_file, sb.st_size, vec));
-			
-			for (int i = 0; i < sb.st_size; i++){
-				printf("%d ", vec[i]);
+			printf("\nPage size: %d\n", pagesize);
+			//lock mutex, print res file contents
+			wait(sem_id_mutex);
+			printf("Current resources: %d\n", pagesize);
+			for(int i = 0; i < sb.st_size; i++){
+				printf("%c", res_file[i]);
 			}
-			printf("\n");
+			signal(sem_id_mutex);
+			
+			if (mincore(res_file, sb.st_size, vec) != -1){
+				printf("mincore:\n");
+				
+				for (int i = 0; i < sb.st_size; i++){
+					printf("%d ", vec[i]);
+				}
+			} else {
+				printf("mincore error");
+			}
+			printf("\n\n");
 			
 			sleep(10);
 		}
@@ -107,30 +140,33 @@ int main(void)
 		        printf("\nHow many units are needed? ");
 		        scanf("%d", &units_needed);
 		        
-		        if(unit_type == 0)
-		        {
+		        wait(sem_id_mutex);
+		        
+		        if(unit_type == 0){
 		            res_file[2] = (char)(((int)res_file[2] - 48) + units_needed + 48);
 		            printf("Unit type %d now has %c units.\n", unit_type, res_file[2]);
 		        }
 		        
-		        if(unit_type == 1)
-		        {
+		        else if(unit_type == 1) {
 		            res_file[6] = (char)(((int)res_file[6] - 48) + units_needed + 48);
 		            printf("Unit type %d now has %c units.\n", unit_type, res_file[6]);
 		        }
 		        
-		        if(unit_type == 2)
-		        {
+		        else if(unit_type == 2) {
 		            res_file[10] = (char)(((int)res_file[10] - 48) + units_needed + 48);
 		            printf("Unit type %d now has %c units.\n", unit_type, res_file[10]);
 		        }
 		        
+		        else {
+		        	printf("No unit of that type.\n");
+		        }
+		        
 		        msync(res_file, sb.st_size, MS_SYNC);
+		        signal(sem_id_mutex);
 		    }
 		}
-    	
     }
     
-    semctl(sem_id,0,IPC_RMID,NULL);
+    semctl(sem_id_mutex,0,IPC_RMID,NULL);
     return 0;
 }
