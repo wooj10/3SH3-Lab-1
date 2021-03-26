@@ -1,11 +1,3 @@
-/******************************************************************************
-
-Welcome to GDB Online.
-GDB online is an online compiler and debugger tool for C, C++, Python, Java, PHP, Ruby, Perl,
-C#, VB, Swift, Pascal, Fortran, Haskell, Objective-C, Assembly, HTML, CSS, JS, SQLite, Prolog.
-Code, Compile, Run and Debug online from anywhere in world.
-
-*******************************************************************************/
 #include <stdio.h>
 #include <sys/types.h>
 #include <fcntl.h>
@@ -106,7 +98,7 @@ int main(void)
 			printf("\nPage size: %d\n", pagesize);
 			//lock mutex, print res file contents
 			wait(sem_id_mutex);
-			printf("Current resources: %d\n", pagesize);
+			printf("Current resources:\n");
 			for(int i = 0; i < sb.st_size; i++){
 				printf("%c", res_file[i]);
 			}
