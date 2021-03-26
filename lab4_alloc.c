@@ -4,7 +4,23 @@
 #include <sys/mman.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/errno.h>
 #include <unistd.h>
+
+#define SEMPERM 0600 /* permission for semaphore */
+
+key_t mutex_key;
+
+union {
+	int val;
+
+	struct semid_ds *buffer;
+
+	ushort *array;
+}semnum;
 
 int main(void)
 {
@@ -18,12 +34,6 @@ int main(void)
         perror("Couldn't get file size.\n");
     }
     printf("File size is %ld\n", sb.st_size);
-    
-    // checking that the file size is smaller than the region size
-    if(sb.st_size >= 10)
-    {
-        printf("File size is smaller than region size.\n");
-    }
 
     // getting the file from virtual memory
     char *res_file = mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, file_descriptor, 0);
@@ -33,6 +43,14 @@ int main(void)
     {
         printf("%c", res_file[i]);
     }
+    
+    int sem_id_mutex;
+    struct sembuf sem_buffer;
+    
+    mutex_key = 22;
+    sem_id_mutex = semget(mutex_key,1,SEMPERM|IPC_CREAT|IPC_EXCL);
+    semnum.val = 1;
+	semctl(sem_id_mutex,0,SETVAL, semnum);
     
     int unit_type = 0;
     int units_needed = 0;
@@ -45,6 +63,9 @@ int main(void)
         printf("\nHow many units are needed? ");
         scanf("%d", &units_needed);
         
+        //wait
+        sem_buffer.sem_op = -1;
+        semop(sem_id_mutex, &sem_buffer, 1);
         // if the unit type is zero, subtract from 0 type units in file
         if(unit_type == 0)
         {
@@ -93,10 +114,15 @@ int main(void)
         
         msync(res_file, sb.st_size, MS_SYNC);
         
+        //signal
+        sem_buffer.sem_op = 1;
+        semop(sem_id_mutex, &sem_buffer, 1);
+        
         // resetting the variables for the next iteration
         unit_type = 0;
         units_needed = 0;
     }
     
+    semctl(sem_id_mutex,0,IPC_RMID,NULL);
     return 0;
 }
