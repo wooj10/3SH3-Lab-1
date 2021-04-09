@@ -20,9 +20,12 @@ void recursive_traversal(const char *base)
 {
     DIR *dir;
     struct dirent *current;
-
-    if (!(dir = opendir(base)))
+	
+	//if we can't open the directory, print error and stop this chain here
+    if (!(dir = opendir(base))){
+    	perror("Couldn't open directory");
         return;
+    }
 
     while ((current = readdir(dir)) != NULL) {
     	if(stat(base,&sb) == -1)
@@ -69,7 +72,7 @@ int main(void)
         scanf("%s", path_name);
         
 	    if(strcmp(path_name, "q") == 0){
-          break;
+			break;
         }
         
 	    if(stat(path_name,&sb) == -1)
@@ -86,8 +89,7 @@ int main(void)
 					\nname:\t\t\t%s\n\n", sb.st_mode, sb.st_nlink, 
 					getpwuid(sb.st_uid) -> pw_name, getgrgid(sb.st_gid) -> gr_name, 
 					sb.st_size, sb.st_blksize, ctime(&sb.st_mtime) + 4, path_name);
-	    }
-		else{
+	    } else if (S_ISDIR(sb.st_mode)){
 			recursive_traversal(path_name);
 		}
     }
